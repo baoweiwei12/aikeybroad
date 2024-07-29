@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+log.txt
+.venv
+config.yaml
+.env
