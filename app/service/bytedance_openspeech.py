@@ -23,7 +23,7 @@ class BytedanceOpenspeechClient:
         self.query_url = "https://openspeech.bytedance.com/api/v1/auc/query"
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": "Bearer " + self.token,
+            "Authorization": f"Bearer; {self.token}",
         }
         self.callback_url = callback_url
 
@@ -37,6 +37,7 @@ class BytedanceOpenspeechClient:
                 "with_speaker_info": "True",
                 "enable_query": "True",
             },
+            "request": {},
         }
         if self.callback_url is not None:
             data["request"]["callback"] = self.callback_url

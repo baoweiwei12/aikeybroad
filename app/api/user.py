@@ -1,16 +1,22 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List
 from app import crud, schemas, models
 from app.core import dependencies, utils
-from app.schemas import ErrorCode, ErrorDetail
+from app.schemas import ErrorCode, ErrorDetail, ErrorResponse
 from datetime import timedelta
 
 router = APIRouter(prefix="", tags=["user"])
 
 
-@router.get("/users/me/", response_model=schemas.User)
+@router.get(
+    "/users/me/",
+    response_model=schemas.User,
+    responses={
+        401: {"model": ErrorResponse},
+    },
+)
 def read_users_me(current_user: models.User = Depends(dependencies.get_current_user)):
     return current_user
 
@@ -91,14 +97,14 @@ def delete_user(
 
 @router.get("/users/", response_model=List[schemas.User])
 def read_users(
-    page: int = 0,
-    per_page: int = 10,
+    page: int = Query(1, ge=1),
+    per_page: int = Query(10, ge=1, le=100),
     db: Session = Depends(dependencies.get_db),
     current_user: models.User = Depends(
         dependencies.check_user_role(["superadmin", "admin"])
     ),
 ):
-    users = crud.get_users(db, skip=page * per_page, limit=per_page)
+    users = crud.get_users(db, skip=(page - 1) * per_page, limit=per_page)
     return users
 
 

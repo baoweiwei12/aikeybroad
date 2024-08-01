@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import logging
 from typing import List
 from sqlalchemy.orm import Session
+from sqlalchemy import delete, select, insert, update
 from app import schemas, models
 from app.core import utils
 from app.core.database import SessionLocal
@@ -64,6 +65,15 @@ def delete_user(db: Session, user_id: int):
     return db_user
 
 
+# def delete_user(db: Session, user_id: int):
+#     query_stmt = select(models.User).where(models.User.id == user_id)
+#     db_user = db.execute(query_stmt).scalars().first()
+#     if db_user is None:
+#         return None
+#     delete_stmt = delete(models.User).where(models.User.id == user_id)
+#     db.execute(delete_stmt)
+#     db.commit()
+#     return db_user
 def authenticate_user(db: Session, username: str, password: str) -> models.User | None:
     user = get_user_by_username(db, username)
     if user and utils.verify_password(password, str(user.hashed_password)):

@@ -1,5 +1,7 @@
+import logging
 import uuid
 import bcrypt
+import requests
 from sqlalchemy.orm import Session
 from app import models
 
@@ -31,3 +33,15 @@ def generate_unique_cdkey(db: Session) -> str:
         )
         if not existing_cdkey:
             return cdkey
+
+
+def get_external_ip():
+    try:
+        response = requests.get("https://ipinfo.io/json")
+        response.raise_for_status()
+
+        ip = response.json().get("ip")
+        return ip
+    except requests.RequestException as e:
+        logging.error(f"An error occurred: {e}")
+        return None

@@ -1,11 +1,12 @@
 from datetime import datetime
-from typing import List
-from fastapi import Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from app.core.security import verify_access_token
 from app import crud, models, schemas
 from app.core.database import SessionLocal
 from sqlalchemy.orm import Session
+from fastapi.security.utils import get_authorization_scheme_param
 
 
 def get_db():
@@ -16,7 +17,28 @@ def get_db():
         db.close()
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/login/token")
+class CustomOAuth2PasswordBearer(OAuth2PasswordBearer):
+    def __init__(self, tokenUrl: str):
+        super().__init__(tokenUrl=tokenUrl)
+
+    async def __call__(self, request: Request) -> Optional[str]:
+        authorization = request.headers.get("Authorization")
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
+            if self.auto_error:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail=schemas.ErrorDetail.from_error_code(
+                        schemas.ErrorCode.NOT_AUTHENTICATED
+                    ),
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+            else:
+                return None
+        return param
+
+
+oauth2_scheme = CustomOAuth2PasswordBearer(tokenUrl="api/login/token")
 
 
 def get_current_user(
@@ -82,7 +104,7 @@ def check_is_expired(
     is_expired: bool = bool(current_user.expiration_date < datetime.now())
     if is_expired:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=status.HTTP_403_FORBIDDEN,
             detail=schemas.ErrorDetail.from_error_code(schemas.ErrorCode.IS_EXPIRED),
         )
-    return is_expired
+    return current_user

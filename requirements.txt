@@ -5,3 +5,5 @@ mysqlclient
 PyJwt
 bcrypt
 requests
+redis
+volcengine-python-sdk[ark]
