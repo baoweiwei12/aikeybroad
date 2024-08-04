@@ -10,13 +10,7 @@ from datetime import timedelta
 router = APIRouter(prefix="", tags=["user"])
 
 
-@router.get(
-    "/users/me/",
-    response_model=schemas.User,
-    responses={
-        401: {"model": ErrorResponse},
-    },
-)
+@router.get("/users/me/",response_model=schemas.User)
 def read_users_me(current_user: models.User = Depends(dependencies.get_current_user)):
     return current_user
 

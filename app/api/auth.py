@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from app import crud, models, schemas
 from app.core import dependencies, security, utils
@@ -160,6 +160,50 @@ def refresh_access_token_by_mac_address(
     expires_delta = timedelta(minutes=CONFIG.JWT.EXPIRE_MINUTES)
     access_token = security.create_access_token(
         data={"sub": current_user.username}, expires_delta=expires_delta
+    )
+    return security.Token(
+        access_token=access_token,
+        token_type="bearer",
+        expire_at=datetime.now() + expires_delta,
+    )
+
+class LoginTokenTK(BaseModel):
+    t: int = Field(..., description="时间戳")
+    k: str = Field(..., description="加密后的参数")
+
+@router.post("/login/token/tk", response_model=security.Token)
+def login_or_register_by_tk(
+    req :LoginTokenTK,
+    db: Session = Depends(dependencies.get_db),
+):
+    
+    key = b'imm6sco23gx97qml'  # AES密钥
+    try:
+        timestamp,mac_address = security.aes_decrypt(req.k, key)
+
+        # 验证时间戳
+        if abs(datetime.now().timestamp() - timestamp) > 60 * 5 or req.t != timestamp:  # 允许5分钟的时间偏差
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=schemas.ErrorDetail.from_error_code(schemas.ErrorCode.INVALID_CREDENTIALS),
+            )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=schemas.ErrorDetail.from_error_code(schemas.ErrorCode.INVALID_CREDENTIALS)
+        )
+    
+    # 检查用户是否存在
+    user = crud.get_user_by_username(db, mac_address)
+    if not user:
+        # 如果用户不存在，则注册一个新用户
+        user = crud.create_user(db, schemas.UserCreate(username=mac_address, email=f"{mac_address}@fake.com", password=mac_address,))
+    
+    # 生成访问Token
+    expires_delta = timedelta(minutes=CONFIG.JWT.EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        data={"sub": user.username}, expires_delta=expires_delta
     )
     return security.Token(
         access_token=access_token,

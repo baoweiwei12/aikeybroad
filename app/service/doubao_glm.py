@@ -1,6 +1,6 @@
 from typing import List
 from volcenginesdkarkruntime import Ark
-from volcenginesdkarkruntime.types.chat import ChatCompletionMessageParam
+from volcenginesdkarkruntime.types.chat import ChatCompletionMessageParam,ChatCompletion
 
 
 
@@ -18,7 +18,7 @@ class DouBaoGLM():
         self.model= model
         self.client = Ark(api_key=self.api_key)
     
-    def chat(self,messages:List[ChatCompletionMessageParam]):
+    def chat(self,messages:List[ChatCompletionMessageParam]) ->ChatCompletion :
 
         completion = self.client.chat.completions.create(
             model=self.model,
@@ -26,4 +26,6 @@ class DouBaoGLM():
             max_tokens=4096,
             stream=False
         )
-        return completion
+        return completion # type: ignore
+
+

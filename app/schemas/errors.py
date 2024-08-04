@@ -21,6 +21,7 @@ class ErrorCode(Enum):
     PASSWORD_NOT_MATCH = (1011, "两次密码不匹配")
     IS_EXPIRED = (1012, "使用权限已过期")
     NOT_AUTHENTICATED = (1013, "未认证")
+    INVALID_CREDENTIALS = (1014, "无效的凭据")
 
     CDKEY_NOT_FOUND = (2001, "CDKEY不存在")
     CDKEY_USED = (2002, "CDKEY已使用")
