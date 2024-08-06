@@ -14,7 +14,7 @@ class GetCdkeyResponse(BaseModel):
     total: int
 
 
-@router.get("/cdkyes/", response_model=GetCdkeyResponse)
+@router.get("/cdkyes", response_model=GetCdkeyResponse)
 def read_cdkeys(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
@@ -32,7 +32,7 @@ class CreateCdkeyRequest(BaseModel):
     quota: int = Field(..., ge=1, le=365)
 
 
-@router.post("/cdkeys/", response_model=List[schemas.Cdkey])
+@router.post("/cdkeys", response_model=List[schemas.Cdkey])
 def create_cdkeys(
     cdkey: CreateCdkeyRequest,
     db: Session = Depends(dependencies.get_db),

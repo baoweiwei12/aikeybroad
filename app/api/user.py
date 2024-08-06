@@ -10,12 +10,12 @@ from datetime import timedelta
 router = APIRouter(prefix="", tags=["user"])
 
 
-@router.get("/users/me/",response_model=schemas.User)
+@router.get("/users/me", response_model=schemas.User)
 def read_users_me(current_user: models.User = Depends(dependencies.get_current_user)):
     return current_user
 
 
-@router.post("/users/", response_model=schemas.User)
+@router.post("/users", response_model=schemas.User)
 def create_user(
     user: schemas.UserCreate,
     db: Session = Depends(dependencies.get_db),
@@ -89,7 +89,7 @@ def delete_user(
     return db_user
 
 
-@router.get("/users/", response_model=List[schemas.User])
+@router.get("/users", response_model=List[schemas.User])
 def read_users(
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
@@ -108,7 +108,7 @@ class UserChangePassword(BaseModel):
     confirm_password: str
 
 
-@router.put("/users/password/", response_model=schemas.User)
+@router.put("/users/password", response_model=schemas.User)
 def change_password(
     data: UserChangePassword,
     db: Session = Depends(dependencies.get_db),
@@ -138,7 +138,7 @@ class UserChargeRequest(BaseModel):
     key: str
 
 
-@router.post("/users/charge/", response_model=schemas.User)
+@router.post("/users/charge", response_model=schemas.User)
 def charge_user(
     data: UserChargeRequest,
     db: Session = Depends(dependencies.get_db),

@@ -1,5 +1,7 @@
+import enum
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
 from sqlalchemy.orm import Session
 from typing import List, Literal, Required, TypedDict, Union, Sequence
 from app import crud, schemas, models
@@ -10,34 +12,64 @@ from datetime import timedelta
 router = APIRouter(prefix="", tags=["config"])
 
 
-@router.get("/config/doubao_glm/{id}", response_model=schemas.ApiConfigDouBaoGLM)
-def get_api_config_doubao_glm(
-    id: int,
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
+class ApiConfigType(enum.Enum):
+    doubao_glm = "doubao_glm"
+    xunfei_ai_ppt = "xunfei_ai_ppt"
+    bytedance_openspeech = "bytedance_openspeech"
+
+
+GET_CONFIG_BY_ID_MAP = {
+    ApiConfigType.doubao_glm: crud.get_api_config_doubao_glm,
+    ApiConfigType.xunfei_ai_ppt: crud.get_api_config_xunfei_ai_ppt,
+    ApiConfigType.bytedance_openspeech: crud.get_api_config_bytedance_openspeech,
+}
+
+GET_CONFIG_BY_PAGE_MAP = {
+    ApiConfigType.doubao_glm: crud.get_api_config_doubao_glm_by_page,
+    ApiConfigType.xunfei_ai_ppt: crud.get_api_config_xunfei_ai_ppt_by_page,
+    ApiConfigType.bytedance_openspeech: crud.get_api_config_bytedance_openspeech_by_page,
+}
+
+
+@router.get(
+    "/config",
+    response_model=Union[
+        schemas.ApiConfigDouBaoGLM,
+        schemas.ApiConfigXunFeiAiPPT,
+        schemas.ApiConfigByteDanceOpenspeech,
+    ],
+)
+def get_api_config(
+    type: ApiConfigType = Query("doubao_glm"),
+    id: int = Query(...),
+    db=Depends(dependencies.get_db),
+    current_user=Depends(dependencies.check_user_role(["admin", "superadmin"])),
 ):
-    api_config = crud.get_api_config_doubao_glm(db, id)
-    if api_config is None:
+    result = GET_CONFIG_BY_ID_MAP[type](db, id)
+    if result is None:
         raise HTTPException(
             status_code=404,
             detail=ErrorDetail.from_error_code(ErrorCode.API_CONFIG_NOT_FOUND),
         )
-    return api_config
+    return result
 
 
-@router.get("/config/doubao_glm", response_model=List[schemas.ApiConfigDouBaoGLM])
-def get_api_config_doubao_glm_by_page(
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
+@router.get(
+    "/config/list",
+    response_model=List[
+        schemas.ApiConfigDouBaoGLM
+        | schemas.ApiConfigXunFeiAiPPT
+        | schemas.ApiConfigByteDanceOpenspeech
+    ],
+)
+def get_api_config_by_page(
+    type: ApiConfigType = Query("doubao_glm"),
     page: int = Query(1, ge=1),
     per_page: int = Query(10, ge=1, le=100),
+    db=Depends(dependencies.get_db),
+    current_user=Depends(dependencies.check_user_role(["admin", "superadmin"])),
 ):
-    api_configs = crud.get_api_config_doubao_glm_by_page(db, page, per_page)
-    return api_configs
+    return GET_CONFIG_BY_PAGE_MAP[type](db, page, per_page)
 
 
 @router.post("/config/doubao_glm", response_model=schemas.ApiConfigDouBaoGLM)
@@ -71,37 +103,6 @@ def update_api_config_doubao_glm(
     return api_config
 
 
-@router.get("/config/xunfei_ai_ppt/{id}", response_model=schemas.ApiConfigXunFeiAiPPT)
-def get_api_config_xunfei_ai_ppt(
-    id: int,
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
-):
-    new_api_config = crud.get_api_config_xunfei_ai_ppt(db, id)
-
-    if new_api_config is None:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorDetail.from_error_code(ErrorCode.API_CONFIG_NOT_FOUND),
-        )
-    return new_api_config
-
-
-@router.get("/config/xunfei_ai_ppt", response_model=List[schemas.ApiConfigXunFeiAiPPT])
-def get_api_config_xunfei_ai_ppt_by_page(
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-):
-    api_configs = crud.get_api_config_xunfei_ai_ppt_by_page(db, page, per_page)
-    return api_configs
-
-
 @router.post("/config/xunfei_ai_ppt", response_model=schemas.ApiConfigXunFeiAiPPT)
 def create_api_config_xunfei_ai_ppt(
     api_config: schemas.ApiConfigXunFeiAiPPTCreate,
@@ -132,44 +133,8 @@ def update_api_config_xunfei_ai_ppt(
     return new_api_config
 
 
-@router.get(
-    "/api_config/bytedance_openspeech/{id}",
-    response_model=schemas.ApiConfigByteDanceOpenspeech,
-)
-def get_api_config_bytedance_openspeech(
-    id: int,
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
-):
-    api_config = crud.get_api_config_bytedance_openspeech(db, id)
-    if api_config is None:
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorDetail.from_error_code(ErrorCode.API_CONFIG_NOT_FOUND),
-        )
-    return api_config
-
-
-@router.get(
-    "/api_config/bytedance_openspeech",
-    response_model=List[schemas.ApiConfigByteDanceOpenspeech],
-)
-def get_api_config_bytedance_openspeech_by_page(
-    db: Session = Depends(dependencies.get_db),
-    current_user: models.User = Depends(
-        dependencies.check_user_role(["admin", "superadmin"])
-    ),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(10, ge=1, le=100),
-):
-    api_configs = crud.get_api_config_bytedance_openspeech_by_page(db, page, per_page)
-    return api_configs
-
-
 @router.post(
-    "/api_config/bytedance_openspeech",
+    "/config/bytedance_openspeech",
     response_model=schemas.ApiConfigByteDanceOpenspeech,
 )
 def create_api_config_bytedance_openspeech(
@@ -184,7 +149,7 @@ def create_api_config_bytedance_openspeech(
 
 
 @router.put(
-    "/api_config/bytedance_openspeech/{id}",
+    "/config/bytedance_openspeech/{id}",
     response_model=schemas.ApiConfigByteDanceOpenspeech,
 )
 def update_api_config_bytedance_openspeech(

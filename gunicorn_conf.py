@@ -2,13 +2,13 @@
 chdir = '/www/wwwroot/aikeybroad'
 
 # 指定进程数
-workers = 4
+workers = 1
 
 # 指定每个进程开启的线程数
-threads = 2
+threads = 6
 
 #启动用户
-user = 'root'
+user = 'www'
 
 # 启动模式
 worker_class = 'uvicorn.workers.UvicornWorker'

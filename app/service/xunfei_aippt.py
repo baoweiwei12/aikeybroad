@@ -76,9 +76,8 @@ class XunFeiAiPPTClient:
 
     class TaskProgress(BaseModel):
         process: int
-        pptId: str
-        pptUrl: str
-        errMsg: str
+        pptUrl: str | None
+        errMsg: str | None
 
     def get_task_progress(self, sid: str):
         url = "https://zwapi.xfyun.cn/api/aippt/progress"

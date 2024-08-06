@@ -33,6 +33,7 @@ class ErrorCode(Enum):
 
     API_CONFIG_NOT_FOUND = (4001, "API配置不存在")
 
+    AI_PPT_TASK_NOT_FOUND = (5001, "AI PPT任务不存在")
     def __init__(self, code, message):
         self.code = code
         self.message = message

@@ -9,3 +9,4 @@ redis
 volcengine-python-sdk[ark]
 pycryptodome
 tiktoken
+apscheduler

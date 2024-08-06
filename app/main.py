@@ -7,16 +7,20 @@ from pydantic import ValidationError
 from app.core.config import CONFIG
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, user, cdkey, errors, speech, chat, api_config
+from app.api import auth, user, cdkey, errors, speech, chat, api_config, aippt
 from app.crud.user import init_user
 from app.core.log import logging
 from app.schemas.errors import ErrorCode, ErrorDetail
+from app.scheduler.service import init_scheduler, scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_user()
+    scheduler.start()
+    init_scheduler()
     yield
+    scheduler.shutdown()
 
 
 app = FastAPI(
@@ -44,7 +48,10 @@ app.include_router(user.router, prefix="/api")
 app.include_router(cdkey.router, prefix="/api")
 app.include_router(speech.router, prefix="/api")
 app.include_router(chat.router, prefix="/api")
-app.include_router(api_config.router, prefix="/api")
+app.include_router(aippt.router, prefix="/api")
+
+
+app.include_router(api_config.router, prefix="/api/backend")
 
 
 @app.exception_handler(HTTPException)
